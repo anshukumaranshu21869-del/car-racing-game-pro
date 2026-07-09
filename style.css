@@ -1,129 +1,45 @@
 * {
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
 }
 
-body {
+html, body {
   margin: 0;
-  background: radial-gradient(circle, #1b1b1b, #000);
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background: #050505;
+  overflow: hidden;
   font-family: Arial, sans-serif;
   color: white;
-  overflow: hidden;
 }
 
-.game-wrapper {
+#game-shell {
   width: 100%;
   max-width: 430px;
+  height: 100vh;
   margin: auto;
-  text-align: center;
-}
-
-.top-bar {
-  display: flex;
-  justify-content: space-around;
-  padding: 12px;
-  font-size: 18px;
-  font-weight: bold;
-  background: #111;
-}
-
-#gameArea {
-  width: 100%;
-  height: 72vh;
-  background: #2f2f2f;
+  background: #000;
   position: relative;
   overflow: hidden;
-  border-left: 7px solid white;
-  border-right: 7px solid white;
 }
 
-.road-line {
-  position: absolute;
-  width: 8px;
-  height: 90px;
-  background: white;
-  left: 50%;
-  transform: translateX(-50%);
-  border-radius: 10px;
-}
-
-.line1 { top: 0; }
-.line2 { top: 220px; }
-.line3 { top: 440px; }
-
-#player {
-  position: absolute;
-  bottom: 25px;
-  left: 45%;
-  font-size: 45px;
-  z-index: 5;
-}
-
-.enemy {
-  position: absolute;
-  font-size: 42px;
-  z-index: 4;
-}
-
-.coin {
-  position: absolute;
-  font-size: 28px;
-  z-index: 3;
-}
-
-#startScreen,
-#gameOverScreen {
-  position: absolute;
-  inset: 0;
-  background: rgba(0,0,0,0.88);
+#hud {
+  height: 48px;
+  background: linear-gradient(90deg, #101010, #202020, #101010);
   display: flex;
-  flex-direction: column;
-  justify-content: center;
+  justify-content: space-around;
   align-items: center;
-  z-index: 10;
-}
-
-#gameOverScreen {
-  display: none;
-}
-
-h1 {
-  margin: 0;
-  font-size: 34px;
-}
-
-p {
-  width: 80%;
   font-size: 16px;
-  color: #ddd;
-}
-
-button {
-  border: none;
-  padding: 14px 24px;
-  margin: 8px;
-  border-radius: 12px;
-  font-size: 20px;
   font-weight: bold;
-  cursor: pointer;
-  background: linear-gradient(135deg, #ffffff, #cfcfcf);
+  border-bottom: 2px solid #333;
+  z-index: 20;
+  position: relative;
 }
 
-.controls {
-  padding: 12px;
-  background: #111;
+#hud b {
+  color: #ffd700;
 }
 
-.controls button {
-  width: 42%;
-  font-size: 28px;
-}
-
-@media (max-width: 500px) {
-  #gameArea {
-    height: 74vh;
-  }
-
-  h1 {
-    font-size: 28px;
-  }
-}
+#game-container {
+  width: 100
