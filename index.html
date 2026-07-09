@@ -1,46 +1,42 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pro Car Racing Game</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Car Racing Pro V2</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-  <div class="game-wrapper">
-    <div class="top-bar">
-      <div>Score: <span id="score">0</span></div>
-      <div>Coins: <span id="coins">0</span></div>
-      <div>High: <span id="highScore">0</span></div>
+  <div id="game-shell">
+    <div id="hud">
+      <span>Score: <b id="score">0</b></span>
+      <span>Coins: <b id="coins">0</b></span>
+      <span>High: <b id="highScore">0</b></span>
     </div>
 
-    <div id="gameArea">
-      <div class="road-line line1"></div>
-      <div class="road-line line2"></div>
-      <div class="road-line line3"></div>
+    <div id="game-container"></div>
 
-      <div id="player">🏎️</div>
-
-      <div id="startScreen">
-        <h1>Car Racing Pro</h1>
-        <p>Dodge cars, collect coins, make high score!</p>
-        <button onclick="startGame()">Start Game</button>
-      </div>
-
-      <div id="gameOverScreen">
-        <h1>Game Over</h1>
-        <p>Your Score: <span id="finalScore">0</span></p>
-        <button onclick="restartGame()">Restart</button>
-      </div>
-    </div>
-
-    <div class="controls">
-      <button onclick="moveLeft()">⬅️</button>
-      <button onclick="moveRight()">➡️</button>
+    <div id="touch-controls">
+      <button id="leftBtn">⬅️</button>
+      <button id="boostBtn">NITRO</button>
+      <button id="rightBtn">➡️</button>
     </div>
   </div>
 
+  <div id="menu">
+    <h1>CAR RACING PRO</h1>
+    <p>Dodge traffic, collect coins, use nitro boost!</p>
+    <button id="startBtn">START GAME</button>
+  </div>
+
+  <div id="gameOver">
+    <h1>GAME OVER</h1>
+    <p>Your Score: <span id="finalScore">0</span></p>
+    <button id="restartBtn">RESTART</button>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
