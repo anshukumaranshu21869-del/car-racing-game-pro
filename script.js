@@ -1,199 +1,288 @@
-const gameArea = document.getElementById("gameArea");
-const player = document.getElementById("player");
-const scoreEl = document.getElementById("score");
-const coinsEl = document.getElementById("coins");
-const highScoreEl = document.getElementById("highScore");
-const startScreen = document.getElementById("startScreen");
-const gameOverScreen = document.getElementById("gameOverScreen");
-const finalScoreEl = document.getElementById("finalScore");
+const scoreText = document.getElementById("score");
+const coinsText = document.getElementById("coins");
+const highScoreText = document.getElementById("highScore");
+const menu = document.getElementById("menu");
+const gameOverBox = document.getElementById("gameOver");
+const finalScoreText = document.getElementById("finalScore");
 
+const startBtn = document.getElementById("startBtn");
+const restartBtn = document.getElementById("restartBtn");
+const leftBtn = document.getElementById("leftBtn");
+const rightBtn = document.getElementById("rightBtn");
+const boostBtn = document.getElementById("boostBtn");
+
+let gameStarted = false;
 let score = 0;
 let coins = 0;
-let highScore = localStorage.getItem("carHighScore") || 0;
-let speed = 5;
-let playerX = 45;
-let gameRunning = false;
-let enemies = [];
-let coinItems = [];
-let gameLoop;
+let highScore = localStorage.getItem("racingHighScoreV2") || 0;
 
-highScoreEl.innerText = highScore;
+highScoreText.textContent = highScore;
+
+const config = {
+  type: Phaser.AUTO,
+  parent: "game-container",
+  width: 430,
+  height: window.innerHeight - 128,
+  backgroundColor: "#111",
+  physics: {
+    default: "arcade",
+    arcade: {
+      debug: false
+    }
+  },
+  scene: {
+    create,
+    update
+  },
+  scale: {
+    mode: Phaser.Scale.FIT,
+    autoCenter: Phaser.Scale.CENTER_BOTH
+  }
+};
+
+const game = new Phaser.Game(config);
+
+let sceneRef;
+let player;
+let cursors;
+let roadLines = [];
+let enemies;
+let coinGroup;
+let speed = 5;
+let laneX = [115, 215, 315];
+let currentLane = 1;
+let isBoosting = false;
+
+function create() {
+  sceneRef = this;
+
+  createRoad(this);
+  createPlayer(this);
+  createEnemies(this);
+  createCoins(this);
+
+  cursors = this.input.keyboard.createCursorKeys();
+
+  this.physics.add.overlap(player, enemies, crashGame, null, this);
+  this.physics.add.overlap(player, coinGroup, collectCoin, null, this);
+
+  setupControls();
+}
+
+function createRoad(scene) {
+  const width = config.width;
+  const height = config.height;
+
+  scene.add.rectangle(width / 2, height / 2, width, height, 0x2b2b2b);
+  scene.add.rectangle(28, height / 2, 10, height, 0xffffff);
+  scene.add.rectangle(width - 28, height / 2, 10, height, 0xffffff);
+
+  for (let i = 0; i < 6; i++) {
+    let line = scene.add.rectangle(width / 2, i * 140, 8, 80, 0xffffff);
+    roadLines.push(line);
+  }
+
+  scene.add.text(10, 10, "PRO V2", {
+    fontSize: "16px",
+    color: "#ffd700"
+  });
+}
+
+function createPlayer(scene) {
+  player = scene.add.text(laneX[currentLane], config.height - 90, "🏎️", {
+    fontSize: "48px"
+  });
+  player.setOrigin(0.5);
+
+  scene.physics.add.existing(player);
+  player.body.setSize(42, 70);
+  player.body.setOffset(8, 2);
+}
+
+function createEnemies(scene) {
+  enemies = scene.physics.add.group();
+
+  for (let i = 0; i < 4; i++) {
+    let enemy = scene.add.text(
+      laneX[Math.floor(Math.random() * 3)],
+      -150 - i * 180,
+      randomCar(),
+      { fontSize: "44px" }
+    );
+
+    enemy.setOrigin(0.5);
+    scene.physics.add.existing(enemy);
+    enemy.body.setSize(40, 65);
+    enemy.body.setOffset(8, 4);
+    enemies.add(enemy);
+  }
+}
+
+function createCoins(scene) {
+  coinGroup = scene.physics.add.group();
+
+  for (let i = 0; i < 3; i++) {
+    let coin = scene.add.text(
+      laneX[Math.floor(Math.random() * 3)],
+      -250 - i * 300,
+      "🪙",
+      { fontSize: "32px" }
+    );
+
+    coin.setOrigin(0.5);
+    scene.physics.add.existing(coin);
+    coin.body.setSize(30, 30);
+    coinGroup.add(coin);
+  }
+}
+
+function update() {
+  if (!gameStarted) return;
+
+  let activeSpeed = isBoosting ? speed + 5 : speed;
+
+  moveRoad(activeSpeed);
+  moveEnemies(activeSpeed);
+  moveCoins(activeSpeed);
+
+  score += isBoosting ? 3 : 1;
+  scoreText.textContent = score;
+
+  if (score % 700 === 0) {
+    speed += 0.7;
+  }
+
+  if (cursors.left.isDown) moveLeft();
+  if (cursors.right.isDown) moveRight();
+}
+
+function moveRoad(activeSpeed) {
+  roadLines.forEach(line => {
+    line.y += activeSpeed;
+    if (line.y > config.height + 50) {
+      line.y = -80;
+    }
+  });
+}
+
+function moveEnemies(activeSpeed) {
+  enemies.children.iterate(enemy => {
+    enemy.y += activeSpeed;
+
+    if (enemy.y > config.height + 80) {
+      enemy.y = -150;
+      enemy.x = laneX[Math.floor(Math.random() * 3)];
+      enemy.setText(randomCar());
+    }
+  });
+}
+
+function moveCoins(activeSpeed) {
+  coinGroup.children.iterate(coin => {
+    coin.y += activeSpeed;
+
+    if (coin.y > config.height + 60) {
+      coin.y = -260;
+      coin.x = laneX[Math.floor(Math.random() * 3)];
+    }
+  });
+}
+
+function moveLeft() {
+  if (!gameStarted) return;
+  if (currentLane > 0) {
+    currentLane--;
+    sceneRef.tweens.add({
+      targets: player,
+      x: laneX[currentLane],
+      duration: 120,
+      ease: "Power2"
+    });
+  }
+}
+
+function moveRight() {
+  if (!gameStarted) return;
+  if (currentLane < 2) {
+    currentLane++;
+    sceneRef.tweens.add({
+      targets: player,
+      x: laneX[currentLane],
+      duration: 120,
+      ease: "Power2"
+    });
+  }
+}
+
+function collectCoin(playerObj, coin) {
+  coins++;
+  coinsText.textContent = coins;
+  score += 100;
+  coin.y = -300;
+  coin.x = laneX[Math.floor(Math.random() * 3)];
+}
+
+function crashGame() {
+  gameStarted = false;
+
+  finalScoreText.textContent = score;
+
+  if (score > highScore) {
+    highScore = score;
+    localStorage.setItem("racingHighScoreV2", highScore);
+    highScoreText.textContent = highScore;
+  }
+
+  sceneRef.cameras.main.shake(300, 0.02);
+  sceneRef.cameras.main.flash(250, 255, 0, 0);
+
+  setTimeout(() => {
+    gameOverBox.style.display = "flex";
+  }, 350);
+}
+
+function randomCar() {
+  const cars = ["🚗", "🚙", "🚕", "🚓", "🚚"];
+  return cars[Math.floor(Math.random() * cars.length)];
+}
 
 function startGame() {
   score = 0;
   coins = 0;
   speed = 5;
-  playerX = 45;
-  enemies = [];
-  coinItems = [];
-  gameRunning = true;
+  currentLane = 1;
+  isBoosting = false;
 
-  scoreEl.innerText = score;
-  coinsEl.innerText = coins;
-  player.style.left = playerX + "%";
+  scoreText.textContent = score;
+  coinsText.textContent = coins;
 
-  document.querySelectorAll(".enemy, .coin").forEach(item => item.remove());
+  player.x = laneX[currentLane];
 
-  startScreen.style.display = "none";
-  gameOverScreen.style.display = "none";
-
-  createEnemies();
-  createCoins();
-
-  clearInterval(gameLoop);
-  gameLoop = setInterval(updateGame, 30);
-}
-
-function restartGame() {
-  startGame();
-}
-
-function createEnemies() {
-  for (let i = 0; i < 3; i++) {
-    let enemy = document.createElement("div");
-    enemy.className = "enemy";
-    enemy.innerText = "🚗";
-    enemy.style.left = randomLane() + "%";
-    enemy.style.top = (-200 - i * 250) + "px";
-    gameArea.appendChild(enemy);
-    enemies.push(enemy);
-  }
-}
-
-function createCoins() {
-  for (let i = 0; i < 2; i++) {
-    let coin = document.createElement("div");
-    coin.className = "coin";
-    coin.innerText = "🪙";
-    coin.style.left = randomLane() + "%";
-    coin.style.top = (-350 - i * 400) + "px";
-    gameArea.appendChild(coin);
-    coinItems.push(coin);
-  }
-}
-
-function randomLane() {
-  const lanes = [18, 45, 72];
-  return lanes[Math.floor(Math.random() * lanes.length)];
-}
-
-function updateGame() {
-  if (!gameRunning) return;
-
-  score++;
-  scoreEl.innerText = score;
-
-  if (score % 500 === 0) {
-    speed += 1;
-  }
-
-  moveRoadLines();
-  moveEnemies();
-  moveCoins();
-  checkCollision();
-}
-
-function moveRoadLines() {
-  document.querySelectorAll(".road-line").forEach(line => {
-    let top = parseInt(line.style.top || line.offsetTop);
-    top += speed;
-
-    if (top > gameArea.offsetHeight) {
-      top = -100;
-    }
-
-    line.style.top = top + "px";
+  enemies.children.iterate((enemy, i) => {
+    enemy.y = -150 - i * 180;
+    enemy.x = laneX[Math.floor(Math.random() * 3)];
   });
-}
 
-function moveEnemies() {
-  enemies.forEach(enemy => {
-    let top = parseInt(enemy.style.top);
-    top += speed;
-
-    if (top > gameArea.offsetHeight) {
-      top = -120;
-      enemy.style.left = randomLane() + "%";
-    }
-
-    enemy.style.top = top + "px";
+  coinGroup.children.iterate((coin, i) => {
+    coin.y = -250 - i * 300;
+    coin.x = laneX[Math.floor(Math.random() * 3)];
   });
+
+  menu.style.display = "none";
+  gameOverBox.style.display = "none";
+  gameStarted = true;
 }
 
-function moveCoins() {
-  coinItems.forEach(coin => {
-    let top = parseInt(coin.style.top);
-    top += speed;
+function setupControls() {
+  startBtn.onclick = startGame;
+  restartBtn.onclick = startGame;
 
-    if (top > gameArea.offsetHeight) {
-      top = -250;
-      coin.style.left = randomLane() + "%";
-    }
+  leftBtn.onclick = moveLeft;
+  rightBtn.onclick = moveRight;
 
-    coin.style.top = top + "px";
+  boostBtn.onmousedown = () => isBoosting = true;
+  boostBtn.onmouseup = () => isBoosting = false;
 
-    if (isCollide(player, coin)) {
-      coins++;
-      coinsEl.innerText = coins;
-      coin.style.top = "-300px";
-      coin.style.left = randomLane() + "%";
-      score += 100;
-    }
-  });
+  boostBtn.ontouchstart = () => isBoosting = true;
+  boostBtn.ontouchend = () => isBoosting = false;
 }
-
-function checkCollision() {
-  enemies.forEach(enemy => {
-    if (isCollide(player, enemy)) {
-      endGame();
-    }
-  });
-}
-
-function isCollide(a, b) {
-  const aRect = a.getBoundingClientRect();
-  const bRect = b.getBoundingClientRect();
-
-  return !(
-    aRect.bottom < bRect.top ||
-    aRect.top > bRect.bottom ||
-    aRect.right < bRect.left ||
-    aRect.left > bRect.right
-  );
-}
-
-function endGame() {
-  gameRunning = false;
-  clearInterval(gameLoop);
-
-  finalScoreEl.innerText = score;
-
-  if (score > highScore) {
-    highScore = score;
-    localStorage.setItem("carHighScore", highScore);
-    highScoreEl.innerText = highScore;
-  }
-
-  gameOverScreen.style.display = "flex";
-}
-
-function moveLeft() {
-  if (!gameRunning) return;
-  if (playerX > 18) {
-    playerX -= 27;
-    player.style.left = playerX + "%";
-  }
-}
-
-function moveRight() {
-  if (!gameRunning) return;
-  if (playerX < 72) {
-    playerX += 27;
-    player.style.left = playerX + "%";
-  }
-}
-
-document.addEventListener("keydown", function(e) {
-  if (e.key === "ArrowLeft") moveLeft();
-  if (e.key === "ArrowRight") moveRight();
-});
